@@ -1,3 +1,10 @@
+Execute - Parameters
+
+python generate_report.py --month 2026-04
+
+----
+
+
 Prompt library — AWS cost reporting
 
 1. Build the full pipeline (first time setup)
@@ -71,3 +78,15 @@ Quick reference — tag alias format
 When adding new aliases, always use this format in the prompt:
 ProjectName → raw_tag_1, raw_tag_2, raw_tag_3
 Matching is always case-insensitive in the script. Hyphens and underscores are treated as distinct characters — PWCT-EPM and PWCT_EPM must both be listed explicitly.
+
+
+TAG_ALIASES = {
+    "PWCT":            ["PWCT", "Project_PWCT"],
+    "KGAC":            ["PWCT_KGAC"],
+    "SCZ":             ["PWCT_ECA", "PWCT_SCEZ", "PWCT_SCZ", "PWCT-SCZ"],
+    "EPM":             ["PWCT-EPM", "PWCT_EPM"],
+    "AES Development": ["AES_DEV", "PWCT_AES", "PWCT_DEV", "PWCT-AES"],
+}
+
+
+
