@@ -89,4 +89,100 @@ TAG_ALIASES = {
 }
 
 
+IAM Role Definition
+
+Step 1 — Create the IAM User
+AWS Console
+  → IAM → Users → Create user
+    → User name: cost-report-runner
+    → Access type: Programmatic access only (no console login needed)
+    → Next
+
+Step 2 — Create and attach the permission policy
+In the IAM console, go to Policies → Create policy → JSON tab and paste:
+json{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "CostExplorerReadOnly",
+      "Effect": "Allow",
+      "Action": "ce:GetCostAndUsage",
+      "Resource": "*"
+    }
+  ]
+}
+Name it CostReportPolicy. Then go back to the user:
+IAM → Users → cost-report-runner
+  → Permissions → Add permissions → Attach policies directly
+    → Search: CostReportPolicy → attach
+
+Step 3 — Generate access keys
+IAM → Users → cost-report-runner
+  → Security credentials tab
+    → Access keys → Create access key
+      → Use case: Local code
+      → Create
+      → Download .csv  ← save this, secret key shown only once
+You'll get two values — keep them safe:
+
+AWS_ACCESS_KEY_ID — starts with AKIA...
+AWS_SECRET_ACCESS_KEY — long random string
+
+
+Step 4 — Configure AWS CLI
+Install AWS CLI if you haven't already:
+bash# macOS
+brew install awscli
+
+# or via pip
+pip install awscli
+Configure a named profile — don't use default so it doesn't interfere with other AWS work:
+bashaws configure --profile cost-report
+
+# AWS Access Key ID [None]: AKIA...............
+# AWS Secret Access Key [None]: ............................
+# Default region name [None]: us-east-1        ← Cost Explorer always needs us-east-1
+# Default output format [None]: json
+This writes to ~/.aws/credentials:
+ini[cost-report]
+aws_access_key_id = AKIA...
+aws_secret_access_key = ...
+region = us-east-1
+
+Step 5 — Run the script
+Tell boto3 to use the named profile before running:
+bash# macOS / Linux
+export AWS_PROFILE=cost-report
+python generate_report.py --month 2026-04
+
+# Windows (Command Prompt)
+set AWS_PROFILE=cost-report
+python generate_report.py --month 2026-04
+
+# Windows (PowerShell)
+$env:AWS_PROFILE = "cost-report"
+python generate_report.py --month 2026-04
+
+# Or pass profile inline without setting env var (one-liner)
+AWS_PROFILE=cost-report python generate_report.py --month 2026-04
+Verify credentials are working before running the script:
+bashAWS_PROFILE=cost-report aws ce get-cost-and-usage \
+  --time-period Start=2026-03-01,End=2026-04-01 \
+  --granularity MONTHLY \
+  --metrics UnblendedCost
+If that returns JSON with cost data — you're ready. If you get AccessDenied — the policy isn't attached correctly.
+
+Step 6 — Update the script to use the profile (optional)
+If you don't want to set AWS_PROFILE every time, hardcode the profile name in generate_report.py:
+python# In generate_report.py — find this line in fetch_costs_by_tag():
+ce = boto3.client("ce", region_name=CE_REGION)
+
+# Replace with:
+session = boto3.Session(profile_name="cost-report")
+ce = session.client("ce", region_name=CE_REGION)
+Then you can run it plainly without any environment variable:
+bashpython generate_report.py --month 2026-04
+
+
+
 
